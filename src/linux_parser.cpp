@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <unistd.h>
 
 #include "parse_file.h"
 
@@ -19,8 +20,7 @@ string LinuxParser::OperatingSystem() {
   std::ifstream filestream(kOSPath);
   if (filestream.is_open()) {
     vector<string> keys = {"PRETTY_NAME"};
-    vector<string> values =
-        ParseFile::getValuesFromKeyValueFile(filestream, keys);
+    vector<string> values = ParseFile::getValuesFromKeyValueFile(filestream, keys);
 
     if (!values.empty()) {
       return values[0];
@@ -67,8 +67,7 @@ float LinuxParser::MemoryUtilization() {
   std::ifstream filestream(kProcDirectory + kMeminfoFilename);
   if (filestream.is_open()) {
     vector<string> keys = {"MemTotal", "MemFree"};
-    vector<string> values =
-        ParseFile::getValuesFromColonDelimitedFile(filestream, keys);
+    vector<string> values = ParseFile::getValuesFromColonDelimitedFile(filestream, keys);
 
     if (values.size() == 2) {
       float memTotal = stof(values[0]);
@@ -110,12 +109,32 @@ long LinuxParser::ActiveJiffies() { return 0; }
 // TODO: Read and return the number of idle jiffies for the system
 long LinuxParser::IdleJiffies() { return 0; }
 
+vector<string> LinuxParser::ProcessCpuUtilization(int pid) {
+  std::ifstream filestream(kProcDirectory + to_string(pid) + kStatFilename);
+  if (filestream.is_open()) {
+
+    string line;
+    std::getline(filestream, line);
+    std::istringstream linestream(line);
+
+    vector<string> cpu_utilization = {};
+    string value;
+    while (linestream >> value) {
+      cpu_utilization.push_back(value);
+    }
+    return cpu_utilization;
+    
+    throw std::runtime_error("ProcessCpuUtilization: Failed to read values");
+  }
+  throw std::runtime_error("ProcessCpuUtilization: Failed to read file");
+}
+
+
 vector<string> LinuxParser::CpuUtilization() {
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()) {
     vector<string> keys = {"cpu"};
-    vector<string> values =
-        ParseFile::getValuesFromSpaceSeparatedFile(filestream, keys);
+    vector<string> values = ParseFile::getValuesFromSpaceSeparatedFile(filestream, keys);
 
     if (values.size() == 1) {
       // 1 space separated line
@@ -137,8 +156,7 @@ int LinuxParser::TotalProcesses() {
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()) {
     vector<string> keys = {"processes"};
-    vector<string> values =
-        ParseFile::getValuesFromSpaceSeparatedFile(filestream, keys);
+    vector<string> values = ParseFile::getValuesFromSpaceSeparatedFile(filestream, keys);
 
     if (values.size() == 1) {
       return stoi(values[0]);
@@ -153,8 +171,7 @@ int LinuxParser::RunningProcesses() {
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()) {
     vector<string> keys = {"procs_running"};
-    vector<string> values =
-        ParseFile::getValuesFromSpaceSeparatedFile(filestream, keys);
+    vector<string> values = ParseFile::getValuesFromSpaceSeparatedFile(filestream, keys);
 
     if (values.size() == 1) {
       return stoi(values[0]);
@@ -165,31 +182,75 @@ int LinuxParser::RunningProcesses() {
   throw std::runtime_error("RunningProcesses: Failed to read file");
 }
 
-// TODO: Read and return the command associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid [[maybe_unused]]) {
+string LinuxParser::Command(int pid) {
   std::ifstream filestream(kProcDirectory + to_string(pid) + kCmdlineFilename);
   if (filestream.is_open()) {
     string line;
     std::getline(filestream, line);
     return line;
   }
-  throw std::runtime_error("Command: Failed to read file for pid " +
-                           to_string(pid));
+  throw std::runtime_error("Command: Failed to read file for pid " + to_string(pid));
 }
 
-// TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid [[maybe_unused]]) { return string(); }
+string LinuxParser::Ram(int pid) {
+  std::ifstream filestream(kProcDirectory + to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    vector<string> keys = {"VmSize"};
+    vector<string> values = ParseFile::getValuesFromColonDelimitedFile(filestream, keys);
+    if (values.size() == 1) {
+      return values[0];
+    } else {
+      throw std::runtime_error("Ram: Failed to read values for pid " + to_string(pid));
+    }
+  }
+  throw std::runtime_error("Ram: Failed to read file for pid " + to_string(pid));
+}
 
-// TODO: Read and return the user ID associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Uid(int pid [[maybe_unused]]) { return string(); }
+string LinuxParser::Uid(int pid) {
+  std::ifstream filestream(kProcDirectory + to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    vector<string> keys = {"Uid"};
+    vector<string> values = ParseFile::getValuesFromColonDelimitedFile(filestream, keys);
+    if (values.size() == 1) {
+      // 1 space separated line
+      std::istringstream linestream(values[0]);
+      vector<string> uids = {};
+      string value;
+      while (linestream >> value) {
+        uids.push_back(value);
+      }
+      return uids[0];
+    }
+    throw std::runtime_error("Uid: Failed to read values for pid " + to_string(pid));
+  }
+  throw std::runtime_error("Uid: Failed to read file for pid " + to_string(pid));
+}
 
-// TODO: Read and return the user associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::User(int pid [[maybe_unused]]) { return string(); }
+string LinuxParser::User(int userId) {
+  std::ifstream filestream(kPasswordPath);
+  if (filestream.is_open()) {
+    string line;
+    while (std::getline(filestream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
+      std::istringstream linestream(line);
+      string username, x, entryUserId;
+      linestream >> username >> x >> entryUserId;
+      if (entryUserId == to_string(userId)) {
+        return username;
+      }
+    }
+    throw std::runtime_error("User: Failed to find user for uid " + to_string(userId));
+  }
+  throw std::runtime_error("User: Failed to read file");
+}
 
-// TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid [[maybe_unused]]) { return 0; }
+long LinuxParser::UpTime(int pid ) { 
+  std::ifstream filestream(kProcDirectory + to_string(pid) + kStatFilename);
+  if (filestream.is_open()) {
+    string uptimeInTicks = ParseFile::getNthValueFromSpaceSeparatedString(filestream, 21); // the 22nd
+    long ticks = stol(uptimeInTicks);
+    long secs = ticks / sysconf(_SC_CLK_TCK);
+    return secs;
+  }
+  throw std::runtime_error("UpTime: Failed to read file for pid " + to_string(pid));
+}

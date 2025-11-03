@@ -16,8 +16,11 @@ using std::vector;
 
 int main() {
   System system;
-  // NCursesDisplay::Display(system);
+  NCursesDisplay::Display(system);
+}
 
+void log(){
+  System system;
   while (1) {
     cout << "---------------------------------------\n";
     cout << "System Uptime: " << system.UpTime() << " seconds\n";
@@ -32,12 +35,16 @@ int main() {
     system.refreshProcesses();
 
     for (auto& process : system.Processes()) {
-      cout << process.Pid() << '\n';
-      // cout << "User: " << process.User() << '\n';
-      cout << "Command: " << process.Command() << '\n';
-      // cout << "Memory: " << process.MemoryUtilization() << '\n';
-      // cout << "CPU: " << process.CpuUtilization() << '\n';
-      cout << "---------------------------------------\n";
+      try{
+        cout << process.Pid() << '\n';
+        cout << "User: " << process.User() << '\n';
+        cout << "ram: " << process.Ram() << '\n';
+        cout << "Command: " << process.Command() << '\n';
+        cout << "CPU: " << process.CpuUtilization() << '\n';
+        cout << "---------------------------------------\n";
+      } catch (const std::runtime_error& e) {
+        cout << "Error retrieving process info: " << e.what() << '\n';
+      }
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(1));

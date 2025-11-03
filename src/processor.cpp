@@ -25,12 +25,10 @@ float Processor::Utilization() {
   long softirq = std::stol(cpu_utilization[LinuxParser::CPUStates::kSoftIRQ_]);
   long steal = std::stol(cpu_utilization[LinuxParser::CPUStates::kSteal_]);
   long guest = std::stol(cpu_utilization[LinuxParser::CPUStates::kGuest_]);
-  long guest_nice =
-      std::stol(cpu_utilization[LinuxParser::CPUStates::kGuestNice_]);
+  long guest_nice = std::stol(cpu_utilization[LinuxParser::CPUStates::kGuestNice_]);
 
   long idle_time = idle + iowait;
-  long total_time = user + nice + system + idle + iowait + irq + softirq +
-                    steal + guest + guest_nice;
+  long total_time = user + nice + system + idle + iowait + irq + softirq + steal + guest + guest_nice;
 
   float f = (float)idle_time / total_time;
 

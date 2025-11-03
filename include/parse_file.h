@@ -11,13 +11,13 @@ using std::vector;
 
 namespace ParseFile {
 
-vector<string> getValuesFromKeyValueFile(std::ifstream& filestream,
-                                         vector<string> keys);
+vector<string> getValuesFromKeyValueFile(std::ifstream& filestream, vector<string> keys);
 
-vector<string> getValuesFromColonDelimitedFile(std::ifstream& filestream,
-                                               vector<string> keys);
+vector<string> getValuesFromColonDelimitedFile(std::ifstream& filestream, vector<string> keys);
 
-vector<string> getValuesFromSpaceSeparatedFile(std::ifstream& filestream,
-                                               vector<string> keys);
+vector<string> getValuesFromSpaceSeparatedFile(std::ifstream& filestream, vector<string> keys);
+
+string getNthValueFromSpaceSeparatedString(std::ifstream& filestream, int n);
+
 }  // namespace ParseFile
 #endif

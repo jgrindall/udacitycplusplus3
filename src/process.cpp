@@ -3,12 +3,14 @@
 #include <unistd.h>
 
 #include <cctype>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "linux_parser.h"
 
+using std::cout;
 using std::string;
 using std::to_string;
 using std::vector;
@@ -17,26 +19,51 @@ Process::Process(int pid) : pid(pid) {}
 
 int Process::Pid() { return this->pid; }
 
-// TODO: Return this process's CPU utilization
-float Process::CpuUtilization() {
-  LinuxParser::CpuUtilization();
-  return 0;
+float Process::CpuUtilization() const{
+
+  //https://stackoverflow.com/questions/16726779/how-do-i-get-the-total-cpu-usage-of-an-application-from-proc-pid-stat/16736599#16736599 
+  
+  vector<string> cpu_utilization = LinuxParser::ProcessCpuUtilization(this->pid);
+  long utime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kUTime_]);
+  long stime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kSTime_]);
+  long cutime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kCUTime_]);
+  long cstime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kCSTime_]);
+  long starttime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kStartTime_]);
+
+  long total_time = utime + stime + (cutime + cstime);  // add child times too
+
+  float total_time_secs = (float)total_time / sysconf(_SC_CLK_TCK);
+  long seconds = LinuxParser::UpTime() - (starttime / sysconf(_SC_CLK_TCK));
+
+  float f = total_time_secs / seconds;
+
+  return (100.0 * f);
+
 }
 
-// TODO: Return the command that generated this process
 string Process::Command() { return LinuxParser::Command(this->pid); }
 
-// TODO: Return this process's memory utilization
-string Process::Ram() { return string(); }
-
-// TODO: Return the user (name) that generated this process
-string Process::User() { return string(); }
-
-// TODO: Return the age of this process (in seconds)
-long int Process::UpTime() { return 0; }
-
-// TODO: Overload the "less than" comparison operator for Process objects
-// REMOVE: [[maybe_unused]] once you define the function
-bool Process::operator<(Process const& a [[maybe_unused]]) const {
-  return true;
+string Process::Ram() {
+  string ram = LinuxParser::Ram(this->pid);
+  long kb = std::stol(ram);
+  return to_string(kb / 1024);
 }
+
+int Process::Uid() {
+  string uid = LinuxParser::Uid(this->pid);
+  //cout << "UID for pid " << this->pid << " is " << uid << '\n';
+  return stoi(uid);
+}
+
+string Process::User() {
+  int userId = this->Uid();
+  return LinuxParser::User(userId);
+}
+
+long int Process::UpTime() { 
+  return LinuxParser::UpTime(this->pid);
+}
+
+bool Process::operator<(Process const& a) const { 
+  return this->CpuUtilization() > a.CpuUtilization();
+ }

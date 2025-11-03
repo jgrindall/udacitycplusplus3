@@ -17,8 +17,7 @@ using std::vector;
 #include <regex>
 #include <string>
 
-vector<string> ParseFile::getValuesFromKeyValueFile(std::ifstream& filestream,
-                                                    vector<string> keys) {
+vector<string> ParseFile::getValuesFromKeyValueFile(std::ifstream& filestream, vector<string> keys) {
   vector<string> values;
   string line;
   const char REPLACE = '_';
@@ -46,8 +45,7 @@ vector<string> ParseFile::getValuesFromKeyValueFile(std::ifstream& filestream,
   return values;
 }
 
-vector<string> ParseFile::getValuesFromColonDelimitedFile(
-    std::ifstream& filestream, vector<string> keys) {
+vector<string> ParseFile::getValuesFromColonDelimitedFile(std::ifstream& filestream, vector<string> keys) {
   vector<string> values;
   string line;
 
@@ -71,8 +69,7 @@ vector<string> ParseFile::getValuesFromColonDelimitedFile(
   return values;
 }
 
-vector<string> ParseFile::getValuesFromSpaceSeparatedFile(
-    std::ifstream& filestream, vector<string> keys) {
+vector<string> ParseFile::getValuesFromSpaceSeparatedFile(std::ifstream& filestream, vector<string> keys) {
   vector<string> values;
   string line;
 
@@ -97,4 +94,21 @@ vector<string> ParseFile::getValuesFromSpaceSeparatedFile(
     }
   }
   return values;
+}
+
+
+string ParseFile::getNthValueFromSpaceSeparatedString(std::ifstream& filestream, int n){
+  string line;
+  if (std::getline(filestream, line)) {
+    std::istringstream linestream(line);
+    string value;
+    int count = 0;
+    while (linestream >> value) {
+      if (count == n) {
+        return value;
+      }
+      count++;
+    }
+  }
+  throw std::runtime_error("getNthValueFromSpaceSeparatedString: Failed to read nth value");
 }
