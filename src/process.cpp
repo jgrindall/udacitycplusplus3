@@ -26,11 +26,9 @@ float Process::CpuUtilization() const{
   vector<string> cpu_utilization = LinuxParser::ProcessCpuUtilization(this->pid);
   long utime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kUTime_]);
   long stime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kSTime_]);
-  long cutime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kCUTime_]);
-  long cstime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kCSTime_]);
   long starttime = std::stol(cpu_utilization[LinuxParser::ProcessCPUStates::kStartTime_]);
 
-  long total_time = utime + stime + (cutime + cstime);  // add child times too
+  long total_time = utime + stime;  // do not add child times too, as we want only this process's CPU usage. 
 
   float total_time_secs = (float)total_time / sysconf(_SC_CLK_TCK);
   long seconds = LinuxParser::UpTime() - (starttime / sysconf(_SC_CLK_TCK));

@@ -20,7 +20,6 @@ class System {
 
   void refreshProcesses();
 
-  // TODO: Define any necessary private members
  private:
   Processor cpu_ = {};
   std::vector<Process> processes_ = {};

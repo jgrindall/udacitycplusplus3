@@ -47,6 +47,9 @@ string LinuxParser::Kernel() {
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
   DIR* directory = opendir(kProcDirectory.c_str());
+  if (directory == nullptr) {
+    throw std::runtime_error("Pids(): Failed to open directory " + kProcDirectory);
+  }
   struct dirent* file;
   while ((file = readdir(directory)) != nullptr) {
     // Is this a directory?
@@ -81,7 +84,6 @@ float LinuxParser::MemoryUtilization() {
   throw std::runtime_error("MemoryUtilization: Failed to read file");
 }
 
-// TODO: Read and return the system uptime
 long LinuxParser::UpTime() {
   std::ifstream filestream(kProcDirectory + kUptimeFilename);
   if (filestream.is_open()) {
@@ -96,17 +98,17 @@ long LinuxParser::UpTime() {
   throw std::runtime_error("UpTime: Failed to read file");
 }
 
-// TODO: Read and return the number of jiffies for the system
+// TODO: Read and return the number of jiffies for the system - only needed for kernel < 2.6 (?)
 long LinuxParser::Jiffies() { return 0; }
 
-// TODO: Read and return the number of active jiffies for a PID
+// TODO: Read and return the number of active jiffies for a PID - only needed for kernel < 2.6 (?)
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
 
-// TODO: Read and return the number of active jiffies for the system
+// TODO: Read and return the number of active jiffies for the system - only needed for kernel < 2.6 (?)
 long LinuxParser::ActiveJiffies() { return 0; }
 
-// TODO: Read and return the number of idle jiffies for the system
+// TODO: Read and return the number of idle jiffies for the system - only needed for kernel < 2.6 (?)
 long LinuxParser::IdleJiffies() { return 0; }
 
 vector<string> LinuxParser::ProcessCpuUtilization(int pid) {
@@ -122,9 +124,13 @@ vector<string> LinuxParser::ProcessCpuUtilization(int pid) {
     while (linestream >> value) {
       cpu_utilization.push_back(value);
     }
+
+    if (cpu_utilization.empty()) {
+      throw std::runtime_error("ProcessCpuUtilization: Failed to read any values");
+    }
+
     return cpu_utilization;
     
-    throw std::runtime_error("ProcessCpuUtilization: Failed to read values");
   }
   throw std::runtime_error("ProcessCpuUtilization: Failed to read file");
 }
